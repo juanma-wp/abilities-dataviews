@@ -33,6 +33,14 @@ function abilities_dataviews_enqueue_scripts( $hook ) {
 		$asset_file['version'],
 		true
 	);
+
+	// Enqueue the built styles (includes DataViews styles)
+	wp_enqueue_style(
+		'abilities-dataviews-style',
+		ABILITIES_DATAVIEWS_URL . 'build/style-index.css',
+		array( 'wp-components' ),
+		$asset_file['version']
+	);
 }
 add_action( 'admin_enqueue_scripts', 'abilities_dataviews_enqueue_scripts' );
 
