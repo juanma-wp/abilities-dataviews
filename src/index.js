@@ -5,6 +5,14 @@ import domReady from "@wordpress/dom-ready";
 import { createRoot } from "@wordpress/element";
 import { DataViews } from '@wordpress/dataviews/wp';
 import { useState, useEffect } from '@wordpress/element';
+import {
+	Modal,
+	Button,
+	__experimentalVStack as VStack,
+	__experimentalText as Text,
+	TextareaControl,
+	Notice
+} from '@wordpress/components';
 
 /**
  * Styles - Import DataViews styles
@@ -158,28 +166,154 @@ const App = () => {
 			id: 'view-details',
 			label: 'View Details',
 			isPrimary: true,
-			callback: (items) => {
-				const ability = items[0];
-				console.log('Viewing details for:', ability);
-				alert(`Ability: ${ability.name}\n\nInput Schema:\n${JSON.stringify(ability.input_schema, null, 2)}\n\nOutput Schema:\n${JSON.stringify(ability.output_schema, null, 2)}`);
+			RenderModal: ({ items: [item], closeModal }) => {
+				const formatSchema = (schema) => {
+					if (Array.isArray(schema)) {
+						return 'No input required';
+					}
+					return JSON.stringify(schema, null, 2);
+				};
+
+				return (
+					<VStack spacing="4">
+							<div style={{ marginBottom: '16px' }}>
+								<Text size="large" weight="600">Ability: {item.name}</Text>
+							</div>
+
+							<div>
+								<Text weight="600">Label:</Text>
+								<Text>{item.label}</Text>
+							</div>
+
+							<div>
+								<Text weight="600">Description:</Text>
+								<Text>{item.description}</Text>
+							</div>
+
+							<div>
+								<Text weight="600">Category:</Text>
+								<Text>{item.category}</Text>
+							</div>
+
+							<div>
+								<Text weight="600">Annotations:</Text>
+								<ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+									<li>Read Only: {item.readonly ? '✓' : '✗'}</li>
+									<li>Destructive: {item.destructive ? '⚠️ Yes' : '✓ No'}</li>
+									<li>Idempotent: {item.idempotent ? '✓' : '✗'}</li>
+									<li>Show in REST: {item.show_in_rest ? '✓' : '✗'}</li>
+								</ul>
+							</div>
+
+							<div>
+								<Text weight="600">Input Schema:</Text>
+								<TextareaControl
+									value={formatSchema(item.input_schema)}
+									readOnly
+									rows={10}
+									style={{ fontFamily: 'monospace', fontSize: '12px' }}
+								/>
+							</div>
+
+							<div>
+								<Text weight="600">Output Schema:</Text>
+								<TextareaControl
+									value={formatSchema(item.output_schema)}
+									readOnly
+									rows={10}
+									style={{ fontFamily: 'monospace', fontSize: '12px' }}
+								/>
+							</div>
+
+						</VStack>
+				);
 			},
 		},
 		{
 			id: 'execute',
 			label: 'Execute',
-			callback: async (items) => {
-				const ability = items[0];
-				if (typeof wp !== "undefined" && wp.abilities) {
-					const { executeAbility } = wp.abilities;
-					try {
-						const result = await executeAbility(ability.name);
-						console.log(`Executed ${ability.name}:`, result);
-						alert(`Executed ${ability.name} successfully!\n\nResult:\n${JSON.stringify(result, null, 2)}`);
-					} catch (error) {
-						console.error(`Error executing ${ability.name}:`, error);
-						alert(`Error executing ${ability.name}: ${error.message}`);
+			RenderModal: ({ items: [item], closeModal }) => {
+				const [isExecuting, setIsExecuting] = useState(false);
+				const [result, setResult] = useState(null);
+				const [error, setError] = useState(null);
+
+				const executeAbilityHandler = async () => {
+					if (typeof wp !== "undefined" && wp.abilities) {
+						const { executeAbility } = wp.abilities;
+						setIsExecuting(true);
+						setError(null);
+						setResult(null);
+
+						try {
+							const executionResult = await executeAbility(item.name);
+							setResult(executionResult);
+							console.log(`Executed ${item.name}:`, executionResult);
+						} catch (err) {
+							setError(err.message);
+							console.error(`Error executing ${item.name}:`, err);
+						} finally {
+							setIsExecuting(false);
+						}
 					}
-				}
+				};
+
+				const hasRequiredInput = !Array.isArray(item.input_schema) &&
+					item.input_schema?.properties &&
+					Object.keys(item.input_schema.properties).some(key =>
+						!item.input_schema.properties[key].hasOwnProperty('default')
+					);
+
+				return (
+					<VStack spacing="4">
+							<div>
+								<Text size="large" weight="600">{item.label}</Text>
+							</div>
+							<Text>{item.description}</Text>
+
+							{hasRequiredInput && (
+								<Notice status="warning" isDismissible={false}>
+									This ability requires input parameters that cannot be provided through this interface.
+								</Notice>
+							)}
+
+							{error && (
+								<Notice status="error" isDismissible={false}>
+									Error: {error}
+								</Notice>
+							)}
+
+							{result && (
+								<div>
+									<Text weight="600">Result:</Text>
+									<TextareaControl
+										value={JSON.stringify(result, null, 2)}
+										readOnly
+										rows={15}
+										style={{ fontFamily: 'monospace', fontSize: '12px' }}
+									/>
+								</div>
+							)}
+
+							<div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+								{!result && !hasRequiredInput && (
+									<Button
+										variant="primary"
+										onClick={executeAbilityHandler}
+										disabled={isExecuting}
+										isBusy={isExecuting}
+									>
+										{isExecuting ? 'Executing...' : 'Execute'}
+									</Button>
+								)}
+								<Button
+									variant={result ? 'primary' : 'secondary'}
+									onClick={closeModal}
+								>
+									{result ? 'Close' : 'Cancel'}
+								</Button>
+							</div>
+						</VStack>
+				);
 			},
 		},
 	];
