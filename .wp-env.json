@@ -1,0 +1,5 @@
+{
+    "core": "WordPress/WordPress#6.9-beta2",
+    "plugins": ["."],
+    "port": 8892
+}

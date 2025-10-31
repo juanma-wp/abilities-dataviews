@@ -1,0 +1,35 @@
+# Node dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Caches and coverage
+.cache/
+.eslintcache
+coverage/
+.parcel-cache/
+.turbo/
+
+# Editor/OS
+.vscode/
+.idea/
+.history/
+.DS_Store
+Thumbs.db
+
+# WordPress local env
+.wp-env/
+
