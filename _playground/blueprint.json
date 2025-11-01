@@ -11,6 +11,7 @@
       "pluginData": {
         "resource": "git:directory",
         "url": "https://github.com/juanma-wp/abilities-api",
+		"ref": "HEAD",
         "path": "/"
       },
       "options": {
