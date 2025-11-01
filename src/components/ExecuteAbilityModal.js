@@ -93,7 +93,7 @@ const ExecuteAbilityModal = ({ items: [item], closeModal }) => {
 					
 					{Object.keys(item.input_schema.properties).map(key => {
 						const prop = item.input_schema.properties[key];
-						const isRequired = item.input_schema.required?.includes(key) || !prop.hasOwnProperty('default');
+						const isRequired = item.input_schema.required?.includes(key) || !Object.prototype.hasOwnProperty.call(prop, 'default');
 
 						return (
 							<InputField

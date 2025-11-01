@@ -43,7 +43,7 @@ export const generateExampleInput = (schema) => {
 		const prop = schema.properties[key];
 
 		// Use default if available
-		if (prop.hasOwnProperty('default')) {
+		if (Object.prototype.hasOwnProperty.call(prop, 'default')) {
 			example[key] = prop.default;
 		} else if (prop.enum) {
 			// Use first enum value as example

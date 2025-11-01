@@ -21,7 +21,7 @@ export const validateInput = (inputValues, schema) => {
 	Object.keys(schema.properties).forEach(key => {
 		const prop = schema.properties[key];
 		const value = inputValues[key];
-		const isRequired = schema.required?.includes(key) || !prop.hasOwnProperty('default');
+		const isRequired = schema.required?.includes(key) || !Object.prototype.hasOwnProperty.call(prop, 'default');
 
 		// Check required fields
 		if (isRequired && !value) {
@@ -96,8 +96,8 @@ export const validateInput = (inputValues, schema) => {
 				}
 			}
 
-			// Enum validation for non-arrays
-			if (prop.enum && !Array.isArray(prop.enum)) {
+			// Enum validation for string/number types
+			if (prop.enum && prop.type !== 'array') {
 				if (!prop.enum.includes(value)) {
 					errors[key] = `Must be one of: ${prop.enum.join(', ')}`;
 				}
