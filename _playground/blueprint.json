@@ -13,19 +13,15 @@
         "url": "https://github.com/juanma-wp/abilities-api",
 		"ref": "HEAD"
       },
-      "options": {
-        "activate": true
-      }
+      "activate": true
     },
     {
       "step": "installPlugin",
-      "pluginZipFile": {
+      "pluginData": {
         "resource": "url",
         "url": "https://github.com/juanma-wp/abilities-dashboard/archive/refs/heads/main.zip"
       },
-      "options": {
-        "activate": true
-      }
+      "activate": true
     },
     {
       "step": "login",
