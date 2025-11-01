@@ -16,3 +16,163 @@
 		}
 	}
 }
+
+/**
+ * JSON Viewer Component Styles
+ */
+.json-viewer {
+	font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	font-size: 13px;
+	line-height: 1.5;
+	background-color: #f6f7f7;
+	padding: 16px;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+	max-height: 400px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/**
+ * Input Parameter Card Styles
+ */
+.input-param-card {
+	margin-bottom: 20px;
+	padding: 12px;
+	background: #fff;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+}
+
+.input-param-label {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 14px;
+	color: #1e1e1e;
+}
+
+.input-param-required {
+	color: #d94f4f;
+}
+
+.input-param-optional {
+	color: #666;
+}
+
+.input-param-type {
+	display: block;
+	color: #666;
+	font-size: 12px;
+
+	code {
+		background: #f0f0f0;
+		padding: 2px 4px;
+		border-radius: 2px;
+		font-size: 11px;
+	}
+}
+
+.input-param-description {
+	display: block;
+	margin-top: 4px;
+	color: #666;
+	font-size: 12px;
+}
+
+/**
+ * Multi-select Option Styles
+ */
+.multi-select-options {
+	background: #f8f8f8;
+	padding: 8px;
+	border-radius: 4px;
+	margin-bottom: 8px;
+	max-height: 150px;
+	overflow-y: auto;
+}
+
+.multi-select-title {
+	display: block;
+	margin-bottom: 6px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.multi-select-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+/**
+ * Input Field Styles
+ */
+.input-field {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	font-size: 14px;
+
+	&.has-error {
+		border-color: #d94f4f;
+	}
+}
+
+/**
+ * Input Parameters Container
+ */
+.input-parameters-container {
+	background: #f0f0f0;
+	padding: 16px;
+	border-radius: 4px;
+	margin-bottom: 16px;
+}
+
+.input-parameters-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.input-parameters-tip {
+	display: block;
+	margin-top: 8px;
+	color: #666;
+	font-style: italic;
+	font-size: 12px;
+}
+
+/**
+ * Modal Content Styles
+ */
+.modal-header {
+	margin-bottom: 16px;
+}
+
+.modal-section {
+	margin-bottom: 16px;
+}
+
+.modal-section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.modal-footer {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+/**
+ * Annotations List Styles
+ */
+.annotations-list {
+	margin: 8px 0;
+	padding-left: 20px;
+}
