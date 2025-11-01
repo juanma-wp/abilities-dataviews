@@ -6,6 +6,10 @@ A WordPress plugin that provides a beautiful, interactive dashboard for viewing 
 
 This plugin creates an admin page that displays all available WordPress Abilities in a searchable, sortable, and filterable table view. It leverages the WordPress DataViews component to provide a modern, responsive interface for exploring and executing abilities.
 
+## Try it Now
+
+[![WordPress Playground](https://img.shields.io/badge/playground-live%20preview-blue?logo=wordpress)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/juanma-wp/abilities-dashboard/main/_playground/blueprint.json)
+
 ## Features
 
 ### 🔍 **Smart Search & Filter**
