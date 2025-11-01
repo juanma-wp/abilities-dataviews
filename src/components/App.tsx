@@ -53,11 +53,7 @@ export const App = () => {
 	const defaultLayouts = {
 		table: {
 			primaryField: 'name',
-		},
-		grid: {
-			primaryField: 'name',
-			mediaField: 'label',
-		},
+		}
 	};
 
 	// Define available actions for each ability

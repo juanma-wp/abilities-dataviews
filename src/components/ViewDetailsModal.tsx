@@ -65,7 +65,9 @@ export const ViewDetailsModal = ({ ability }: ViewDetailsModalProps) => {
 					}}
 				>
 					<Text weight="600">Input Schema:</Text>
-					<CopyButton text={JSON.stringify(ability.input_schema, null, 2)} />
+					{!Array.isArray(ability.input_schema) && (
+						<CopyButton text={JSON.stringify(ability.input_schema, null, 2)} />
+					)}
 				</div>
 				{Array.isArray(ability.input_schema) ? (
 					<Text style={{ color: '#666', fontStyle: 'italic' }}>No input required</Text>
@@ -84,9 +86,15 @@ export const ViewDetailsModal = ({ ability }: ViewDetailsModalProps) => {
 					}}
 				>
 					<Text weight="600">Output Schema:</Text>
-					<CopyButton text={JSON.stringify(ability.output_schema, null, 2)} />
+					{(!Array.isArray(ability.output_schema) || ability.output_schema.length > 0) && (
+						<CopyButton text={JSON.stringify(ability.output_schema, null, 2)} />
+					)}
 				</div>
-				<JSONViewer data={ability.output_schema} />
+				{Array.isArray(ability.output_schema) && ability.output_schema.length === 0 ? (
+					<Text style={{ color: '#666', fontStyle: 'italic' }}>No output schema</Text>
+				) : (
+					<JSONViewer data={ability.output_schema} />
+				)}
 			</div>
 		</VStack>
 	);
