@@ -5,21 +5,32 @@
 		"php": "8.0",
 		"wp": "latest"
 	},
+	"plugins": ["https://github.com/WordPress/abilities-api/releases/download/v0.4.0/abilities-api.zip"],
 	"steps": [
-		{
-			"step": "installPlugin",
-			"pluginZipFile": {
-				"resource": "url",
-				"url": "https://github.com/juanma-wp/abilities-dashboard/archive/refs/heads/main.zip"
-			},
-			"options": {
-				"activate": true
-			}
-		},
-		{
-			"step": "login",
-			"username": "admin",
-			"password": "password"
-		}
-	]
+    {
+      "step": "installPlugin",
+      "pluginZipFile": {
+        "resource": "url",
+        "url": "https://github.com/juanma-wp/abilities-dashboard/archive/refs/heads/main.zip"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginZipFile": {
+        "resource": "url",
+        "url": "https://github.com/juanma-wp/abilities-dashboard/archive/refs/heads/main.zip"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "login",
+      "username": "admin",
+      "password": "password"
+    }
+  ]
 }
