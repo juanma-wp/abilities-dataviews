@@ -33,4 +33,7 @@ Thumbs.db
 # WordPress local env
 .wp-env/
 
+# Backup files
+*.bak
+
 COMPARISON.md
