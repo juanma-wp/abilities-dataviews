@@ -22,7 +22,7 @@ import './style.scss';
 console.log("Test Stream Abilities API JS loaded!");
 
 const App = () => {
-	const [abilities, setAbilities] = useState([]);
+	const [allAbilities, setAllAbilities] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
@@ -46,7 +46,7 @@ const App = () => {
 						// Format output_schema for display
 						output_type: ability.output_schema?.type || 'unknown'
 					}));
-					setAbilities(transformedData);
+					setAllAbilities(transformedData);
 					setIsLoading(false);
 				} catch (error) {
 					console.error("Error loading abilities:", error);
@@ -61,6 +61,17 @@ const App = () => {
 		loadAbilities();
 	}, []);
 
+	// Extract unique categories from abilities for filtering
+	const categoryElements = [...new Set(allAbilities.map(ability => ability.category))]
+		.filter(Boolean)
+		.sort()
+		.map(cat => ({
+			value: cat,
+			label: cat.split('-').map(word =>
+				word.charAt(0).toUpperCase() + word.slice(1)
+			).join(' ')
+		}));
+
 	// Define fields for DataViews columns
 	const fields = [
 		{
@@ -68,23 +79,25 @@ const App = () => {
 			label: 'Ability Name',
 			enableHiding: false,
 			enableSorting: true,
+			enableGlobalSearch: true,
 		},
 		{
 			id: 'label',
 			label: 'Label',
 			enableSorting: true,
 			enableHiding: true,
+			enableGlobalSearch: true,
 		},
 		{
 			id: 'category',
 			label: 'Category',
 			enableSorting: true,
 			enableHiding: true,
-			elements: [
-				{ value: 'site', label: 'Site' },
-				{ value: 'data-retrieval', label: 'Data Retrieval' },
-				{ value: 'content', label: 'Content' },
-			],
+			elements: categoryElements,
+			filterBy: {
+				operators: ['is', 'isNot'],
+			},
+			enableGlobalSearch: true,
 		},
 		{
 			id: 'description',
@@ -92,6 +105,7 @@ const App = () => {
 			enableSorting: false,
 			enableHiding: true,
 			maxWidth: 400,
+			enableGlobalSearch: true,
 		},
 		{
 			id: 'input_type',
@@ -145,6 +159,13 @@ const App = () => {
 			primaryField: 'name',
 		},
 	});
+
+	// Use filterSortAndPaginate to process the data based on view configuration
+	const { data: processedAbilities, paginationInfo } = filterSortAndPaginate(
+		allAbilities,
+		view,
+		fields
+	);
 
 	// Define default layouts for different view types
 	const defaultLayouts = {
@@ -724,7 +745,7 @@ const App = () => {
 		return <p>Loading abilities...</p>;
 	}
 
-	if (abilities.length === 0) {
+	if (allAbilities.length === 0) {
 		return <p>No abilities found.</p>;
 	}
 
@@ -732,15 +753,12 @@ const App = () => {
 		<div style={{ padding: '20px' }}>
 			<h2>WordPress Abilities DataViews</h2>
 			<DataViews
-				data={abilities}
+				data={processedAbilities}
 				fields={fields}
 				view={view}
 				onChangeView={setView}
 				actions={actions}
-				paginationInfo={{
-					totalItems: abilities.length,
-					totalPages: Math.ceil(abilities.length / view.perPage),
-				}}
+				paginationInfo={paginationInfo}
 				supportedLayouts={['table']}
 				defaultLayouts={defaultLayouts}
 			/>
