@@ -5,7 +5,7 @@
 		"php": "8.0",
 		"wp": "latest"
 	},
-	"plugins": ["https://github.com/WordPress/abilities-api/releases/download/v0.4.0/abilities-api.zip"],
+	"plugins": ["https://raw.githubusercontent.com/WordPress/abilities-api/releases/download/v0.4.0/abilities-api.zip"],
 	"steps": [
     {
       "step": "installPlugin",
