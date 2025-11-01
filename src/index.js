@@ -11,7 +11,11 @@ import {
 	__experimentalVStack as VStack,
 	__experimentalText as Text,
 	TextareaControl,
-	Notice
+	Notice,
+	Card,
+	CardBody,
+	__experimentalHStack as HStack,
+	ClipboardButton
 } from '@wordpress/components';
 
 /**
@@ -21,9 +25,77 @@ import './style.scss';
 
 console.log("Test Stream Abilities API JS loaded!");
 
+// Generate example input based on schema
+const generateExampleInput = (schema) => {
+	if (Array.isArray(schema) || !schema?.properties) {
+		return null;
+	}
+
+	const example = {};
+	Object.keys(schema.properties).forEach(key => {
+		const prop = schema.properties[key];
+
+		// Use default if available
+		if (prop.hasOwnProperty('default')) {
+			example[key] = prop.default;
+		} else if (prop.enum) {
+			// Use first enum value as example
+			example[key] = prop.type === 'array' ? [prop.items?.enum?.[0]] : prop.enum[0];
+		} else {
+			// Generate based on type
+			switch (prop.type) {
+				case 'string':
+					example[key] = prop.format === 'email' ? 'example@email.com' :
+									prop.format === 'url' ? 'https://example.com' :
+									'example';
+					break;
+				case 'number':
+				case 'integer':
+					example[key] = prop.minimum || 1;
+					break;
+				case 'boolean':
+					example[key] = false;
+					break;
+				case 'array':
+					if (prop.items?.enum) {
+						example[key] = [prop.items.enum[0]];
+					} else {
+						example[key] = [];
+					}
+					break;
+				case 'object':
+					example[key] = {};
+					break;
+				default:
+					example[key] = null;
+			}
+		}
+	});
+
+	return example;
+};
+
 const App = () => {
 	const [allAbilities, setAllAbilities] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
+
+	// Determine provider from ability name
+	const getProvider = (abilityName) => {
+		if (abilityName.startsWith('core/')) return 'Core';
+		if (abilityName.startsWith('plugin/')) return 'Plugin';
+		if (abilityName.startsWith('theme/')) return 'Theme';
+		// For custom abilities, check common patterns
+		if (abilityName.includes('/')) {
+			const prefix = abilityName.split('/')[0];
+			// Common core prefixes
+			if (['site', 'user', 'post', 'media', 'term', 'comment'].includes(prefix)) {
+				return 'Core';
+			}
+			// Likely plugin or custom
+			return 'Plugin';
+		}
+		return 'Unknown';
+	};
 
 	useEffect(() => {
 		const loadAbilities = async () => {
@@ -35,6 +107,8 @@ const App = () => {
 					const transformedData = abilitiesData.map((ability, index) => ({
 						id: index + 1,
 						...ability,
+						// Add provider information
+						provider: getProvider(ability.name),
 						// Flatten meta annotations for easier display
 						readonly: ability.meta?.annotations?.readonly || false,
 						destructive: ability.meta?.annotations?.destructive || false,
@@ -72,6 +146,7 @@ const App = () => {
 			).join(' ')
 		}));
 
+
 	// Define fields for DataViews columns
 	const fields = [
 		{
@@ -87,6 +162,16 @@ const App = () => {
 			enableSorting: true,
 			enableHiding: true,
 			enableGlobalSearch: true,
+		},
+		{
+			id: 'provider',
+			label: 'Provider',
+			enableSorting: true,
+			enableHiding: true,
+			elements: [...new Set(allAbilities.map(a => a.provider))].map(p => ({ value: p, label: p })),
+			filterBy: {
+				operators: ['is', 'isNot'],
+			},
 		},
 		{
 			id: 'category',
@@ -151,7 +236,7 @@ const App = () => {
 			field: 'name',
 			direction: 'asc',
 		},
-		fields: ['name', 'label', 'category', 'description', 'readonly', 'destructive'],
+		fields: ['name', 'label', 'provider', 'category', 'description', 'readonly', 'destructive'],
 		filters: [],
 		search: '',
 		hiddenFields: [],
@@ -224,7 +309,17 @@ const App = () => {
 							</div>
 
 							<div>
-								<Text weight="600">Input Schema:</Text>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+									<Text weight="600">Input Schema:</Text>
+									<ClipboardButton
+										text={formatSchema(item.input_schema)}
+										variant="secondary"
+										size="small"
+										onCopy={() => console.log('Copied input schema')}
+									>
+										Copy
+									</ClipboardButton>
+								</div>
 								<TextareaControl
 									value={formatSchema(item.input_schema)}
 									readOnly
@@ -234,7 +329,17 @@ const App = () => {
 							</div>
 
 							<div>
-								<Text weight="600">Output Schema:</Text>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+									<Text weight="600">Output Schema:</Text>
+									<ClipboardButton
+										text={formatSchema(item.output_schema)}
+										variant="secondary"
+										size="small"
+										onCopy={() => console.log('Copied output schema')}
+									>
+										Copy
+									</ClipboardButton>
+								</div>
 								<TextareaControl
 									value={formatSchema(item.output_schema)}
 									readOnly
@@ -429,7 +534,30 @@ const App = () => {
 
 							{hasInput && !result && (
 								<div style={{ background: '#f0f0f0', padding: '16px', borderRadius: '4px' }}>
-									<Text weight="600" style={{ marginBottom: '12px', display: 'block' }}>Input Parameters:</Text>
+									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+										<Text weight="600">Input Parameters:</Text>
+										<Button
+											variant="secondary"
+											size="small"
+											onClick={() => {
+												const example = generateExampleInput(item.input_schema);
+												if (example) {
+													const newValues = {};
+													Object.keys(example).forEach(key => {
+														if (Array.isArray(example[key]) || typeof example[key] === 'object') {
+															newValues[key] = JSON.stringify(example[key], null, 2);
+														} else {
+															newValues[key] = String(example[key]);
+														}
+													});
+													setInputValues(newValues);
+													setInputErrors({});
+												}
+											}}
+										>
+											Generate Example
+										</Button>
+									</div>
 									{Object.keys(item.input_schema.properties).map(key => {
 										const prop = item.input_schema.properties[key];
 										const isRequired = item.input_schema.required?.includes(key) || !prop.hasOwnProperty('default');
@@ -707,7 +835,17 @@ const App = () => {
 
 							{result && (
 								<div>
-									<Text weight="600">Result:</Text>
+									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+										<Text weight="600">Result:</Text>
+										<ClipboardButton
+											text={JSON.stringify(result, null, 2)}
+											variant="secondary"
+											size="small"
+											onCopy={() => console.log('Copied result')}
+										>
+											Copy Result
+										</ClipboardButton>
+									</div>
 									<TextareaControl
 										value={JSON.stringify(result, null, 2)}
 										readOnly
