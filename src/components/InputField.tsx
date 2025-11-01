@@ -226,7 +226,7 @@ export const InputField = ({
 					<label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
 						<input
 							type="checkbox"
-							checked={value === 'true' || value === 'true'}
+							checked={value === 'true' || value === true}
 							onChange={(e) => handleChange(e.target.checked.toString())}
 							style={{ marginRight: '8px' }}
 						/>

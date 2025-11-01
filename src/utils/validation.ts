@@ -102,8 +102,8 @@ export const validateInput = (
 				}
 			}
 
-			// Enum validation for non-arrays
-			if (prop.enum && !Array.isArray(prop.enum)) {
+			// Enum validation for string/number enums (not arrays)
+			if (prop.enum && prop.type !== 'array') {
 				if (!prop.enum.includes(value)) {
 					errors[key] = `Must be one of: ${prop.enum.join(', ')}`;
 				}
