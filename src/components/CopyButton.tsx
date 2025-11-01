@@ -20,8 +20,13 @@ export const CopyButton = ({ text, label = 'Copy' }: CopyButtonProps) => {
 		console.log('Copied to clipboard');
 	});
 
+	// Don't render if there's no text to copy
+	if (!text) {
+		return null;
+	}
+
 	return (
-		<Button ref={ref} variant="secondary" size="small">
+		<Button ref={ref} variant="link" size="small">
 			{label}
 		</Button>
 	);
