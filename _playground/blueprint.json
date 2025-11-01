@@ -1,22 +1,15 @@
 {
-	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
-	"landingPage": "/wp-admin/admin.php?page=abilities-dashboard",
-	"preferredVersions": {
-		"php": "8.0",
-		"wp": "latest"
-	},
-	"steps": [
-    {
-      "step": "installPlugin",
-      "pluginData": {
-        "resource": "git:directory",
-        "url": "https://github.com/juanma-wp/abilities-api/",
-        "ref": "trunk"
-      },
-      "options": {
-        "activate": true
-      }
-    },
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/admin.php?page=abilities-dashboard",
+  "preferredVersions": {
+    "php": "8.0",
+    "wp": "latest"
+  },
+  "plugins": [
+    "plugin-check",
+    "https://github.com/WordPress/abilities-api/releases/download/v0.4.0/abilities-api.zip"
+  ],
+  "steps": [
     {
       "step": "installPlugin",
       "pluginData": {
