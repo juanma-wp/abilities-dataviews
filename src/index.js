@@ -900,7 +900,7 @@ const App = () => {
 };
 
 domReady( () => {
-	const root = document.getElementById( 'abilities-dataviews-root' );
+	const root = document.getElementById( 'abilities-dashboard-root' );
 	if ( root ) {
 		createRoot( root ).render( <App /> );
 	}

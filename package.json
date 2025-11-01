@@ -1,7 +1,7 @@
 {
-	"name": "abilities-dataviews",
+	"name": "abilities-dashboard",
 	"version": "1.0.0",
-	"description": "Simple DataViews testing plugin",
+	"description": "WordPress Abilities Dashboard using DataViews",
 	"main": "build/index.js",
 	"scripts": {
 		"build": "wp-scripts build",
