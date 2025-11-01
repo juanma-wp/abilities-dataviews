@@ -1,6 +1,6 @@
-# Abilities DataViews
+# Abilities Dashboard
 
-A WordPress plugin that provides a beautiful, interactive interface for viewing and managing WordPress Abilities using the WordPress DataViews component.
+A WordPress plugin that provides a beautiful, interactive dashboard for viewing and managing WordPress Abilities with advanced data visualization and management capabilities.
 
 ## Overview
 
