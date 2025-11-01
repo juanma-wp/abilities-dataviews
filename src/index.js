@@ -14,9 +14,9 @@ import {
 	Notice,
 	Card,
 	CardBody,
-	__experimentalHStack as HStack,
-	ClipboardButton
+	__experimentalHStack as HStack
 } from '@wordpress/components';
+import { useCopyToClipboard } from '@wordpress/compose';
 
 /**
  * Styles - Import DataViews styles
@@ -24,6 +24,40 @@ import {
 import './style.scss';
 
 console.log("Test Stream Abilities API JS loaded!");
+
+// Copy Button Component using modern hook
+const CopyButton = ({ text, label = 'Copy' }) => {
+	const ref = useCopyToClipboard(text, () => {
+		console.log('Copied to clipboard');
+	});
+
+	return (
+		<Button ref={ref} variant="secondary" size="small">
+			{label}
+		</Button>
+	);
+};
+
+// Fallback to a simple formatted JSON display
+const JSONViewer = ({ data, expanded = false }) => {
+	return (
+		<div style={{
+			fontFamily: 'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+			fontSize: '13px',
+			lineHeight: '1.5',
+			backgroundColor: '#f6f7f7',
+			padding: '16px',
+			borderRadius: '4px',
+			border: '1px solid #ddd',
+			maxHeight: '400px',
+			overflowY: 'auto',
+			whiteSpace: 'pre-wrap',
+			wordBreak: 'break-word'
+		}}>
+			{JSON.stringify(data, null, 2)}
+		</div>
+	);
+};
 
 // Generate example input based on schema
 const generateExampleInput = (schema) => {
@@ -270,13 +304,6 @@ const App = () => {
 			label: 'View Details',
 			isPrimary: true,
 			RenderModal: ({ items: [item], closeModal }) => {
-				const formatSchema = (schema) => {
-					if (Array.isArray(schema)) {
-						return 'No input required';
-					}
-					return JSON.stringify(schema, null, 2);
-				};
-
 				return (
 					<VStack spacing="4">
 							<div style={{ marginBottom: '16px' }}>
@@ -311,41 +338,21 @@ const App = () => {
 							<div>
 								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 									<Text weight="600">Input Schema:</Text>
-									<ClipboardButton
-										text={formatSchema(item.input_schema)}
-										variant="secondary"
-										size="small"
-										onCopy={() => console.log('Copied input schema')}
-									>
-										Copy
-									</ClipboardButton>
+									<CopyButton text={JSON.stringify(item.input_schema, null, 2)} />
 								</div>
-								<TextareaControl
-									value={formatSchema(item.input_schema)}
-									readOnly
-									rows={10}
-									style={{ fontFamily: 'monospace', fontSize: '12px' }}
-								/>
+								{Array.isArray(item.input_schema) ? (
+									<Text style={{ color: '#666', fontStyle: 'italic' }}>No input required</Text>
+								) : (
+									<JSONViewer data={item.input_schema} />
+								)}
 							</div>
 
 							<div>
 								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 									<Text weight="600">Output Schema:</Text>
-									<ClipboardButton
-										text={formatSchema(item.output_schema)}
-										variant="secondary"
-										size="small"
-										onCopy={() => console.log('Copied output schema')}
-									>
-										Copy
-									</ClipboardButton>
+									<CopyButton text={JSON.stringify(item.output_schema, null, 2)} />
 								</div>
-								<TextareaControl
-									value={formatSchema(item.output_schema)}
-									readOnly
-									rows={10}
-									style={{ fontFamily: 'monospace', fontSize: '12px' }}
-								/>
+								<JSONViewer data={item.output_schema} />
 							</div>
 
 						</VStack>
@@ -837,21 +844,9 @@ const App = () => {
 								<div>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 										<Text weight="600">Result:</Text>
-										<ClipboardButton
-											text={JSON.stringify(result, null, 2)}
-											variant="secondary"
-											size="small"
-											onCopy={() => console.log('Copied result')}
-										>
-											Copy Result
-										</ClipboardButton>
+										<CopyButton text={JSON.stringify(result, null, 2)} label="Copy Result" />
 									</div>
-									<TextareaControl
-										value={JSON.stringify(result, null, 2)}
-										readOnly
-										rows={15}
-										style={{ fontFamily: 'monospace', fontSize: '12px' }}
-									/>
+									<JSONViewer data={result} expanded={true} />
 								</div>
 							)}
 
