@@ -113,23 +113,6 @@ const App = () => {
 	const [allAbilities, setAllAbilities] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Determine provider from ability name
-	const getProvider = (abilityName) => {
-		if (abilityName.startsWith('core/')) return 'Core';
-		if (abilityName.startsWith('plugin/')) return 'Plugin';
-		if (abilityName.startsWith('theme/')) return 'Theme';
-		// For custom abilities, check common patterns
-		if (abilityName.includes('/')) {
-			const prefix = abilityName.split('/')[0];
-			// Common core prefixes
-			if (['site', 'user', 'post', 'media', 'term', 'comment'].includes(prefix)) {
-				return 'Core';
-			}
-			// Likely plugin or custom
-			return 'Plugin';
-		}
-		return 'Unknown';
-	};
 
 	useEffect(() => {
 		const loadAbilities = async () => {
@@ -141,8 +124,6 @@ const App = () => {
 					const transformedData = abilitiesData.map((ability, index) => ({
 						id: index + 1,
 						...ability,
-						// Add provider information
-						provider: getProvider(ability.name),
 						// Flatten meta annotations for easier display
 						readonly: ability.meta?.annotations?.readonly || false,
 						destructive: ability.meta?.annotations?.destructive || false,
@@ -196,16 +177,6 @@ const App = () => {
 			enableSorting: true,
 			enableHiding: true,
 			enableGlobalSearch: true,
-		},
-		{
-			id: 'provider',
-			label: 'Provider',
-			enableSorting: true,
-			enableHiding: true,
-			elements: [...new Set(allAbilities.map(a => a.provider))].map(p => ({ value: p, label: p })),
-			filterBy: {
-				operators: ['is', 'isNot'],
-			},
 		},
 		{
 			id: 'category',
@@ -270,7 +241,7 @@ const App = () => {
 			field: 'name',
 			direction: 'asc',
 		},
-		fields: ['name', 'label', 'provider', 'category', 'description', 'readonly', 'destructive'],
+		fields: ['name', 'label', 'category', 'description', 'readonly', 'destructive'],
 		filters: [],
 		search: '',
 		hiddenFields: [],
@@ -884,7 +855,12 @@ const App = () => {
 
 	return (
 		<div style={{ padding: '20px' }}>
-			<h2>WordPress Abilities DataViews</h2>
+			<div style={{ marginBottom: '20px' }}>
+				<p>
+					This dashboard lets you explore and execute <strong>WordPress Abilities</strong> interactively. 
+					Use the table below to browse available abilities, filter and search, view input/output schemas, and run abilities directly from the interface.
+				</p>
+			</div>
 			<DataViews
 				data={processedAbilities}
 				fields={fields}

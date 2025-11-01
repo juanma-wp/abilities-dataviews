@@ -34,6 +34,7 @@ function abilities_dashboard_enqueue_scripts( $hook ) {
 		true
 	);
 
+
 	// Enqueue the built styles (includes DataViews styles)
 	wp_enqueue_style(
 		'abilities-dashboard-style',
@@ -47,8 +48,8 @@ add_action( 'admin_enqueue_scripts', 'abilities_dashboard_enqueue_scripts' );
 // Add admin menu
 function abilities_dashboard_add_menu() {
 	add_menu_page(
-		'Abilities Dashboard',
-		'Abilities Dashboard',
+		'Abilities',
+		'Abilities',
 		'manage_options',
 		'abilities-dashboard',
 		'abilities_dashboard_render_page',
