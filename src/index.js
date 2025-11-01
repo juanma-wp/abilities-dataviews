@@ -3,7 +3,7 @@
  */
 import domReady from "@wordpress/dom-ready";
 import { createRoot } from "@wordpress/element";
-import { DataViews } from '@wordpress/dataviews/wp';
+import { DataViews, filterSortAndPaginate } from '@wordpress/dataviews/wp';
 import { useState, useEffect } from '@wordpress/element';
 import {
 	Modal,
@@ -154,10 +154,7 @@ const App = () => {
 		grid: {
 			primaryField: 'name',
 			mediaField: 'label',
-		},
-		list: {
-			primaryField: 'name',
-		},
+		}
 	};
 
 	// Define available actions for each ability
@@ -257,18 +254,86 @@ const App = () => {
 						Object.keys(item.input_schema.properties).forEach(key => {
 							const prop = item.input_schema.properties[key];
 							const value = inputValues[key];
+							const isRequired = item.input_schema.required?.includes(key) || !prop.hasOwnProperty('default');
 
 							// Check required fields
-							if (!prop.hasOwnProperty('default') && !value) {
+							if (isRequired && !value) {
 								errors[key] = 'This field is required';
+								return;
 							}
 
-							// Type validation
-							if (value && prop.type === 'array' && !Array.isArray(value)) {
-								try {
-									JSON.parse(value);
-								} catch {
-									errors[key] = 'Must be a valid JSON array';
+							// Skip validation for empty optional fields
+							if (!value && !isRequired) {
+								return;
+							}
+
+							// Type-specific validation
+							if (value) {
+								// Array validation
+								if (prop.type === 'array') {
+									try {
+										const parsed = JSON.parse(value);
+										if (!Array.isArray(parsed)) {
+											errors[key] = 'Must be a valid JSON array';
+										} else if (prop.items?.enum) {
+											// Validate enum values
+											const invalidValues = parsed.filter(v => !prop.items.enum.includes(v));
+											if (invalidValues.length > 0) {
+												errors[key] = `Invalid values: ${invalidValues.join(', ')}. Allowed: ${prop.items.enum.join(', ')}`;
+											}
+										}
+									} catch {
+										errors[key] = 'Must be valid JSON array format';
+									}
+								}
+
+								// Object validation
+								if (prop.type === 'object') {
+									try {
+										const parsed = JSON.parse(value);
+										if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+											errors[key] = 'Must be a valid JSON object';
+										}
+									} catch {
+										errors[key] = 'Must be valid JSON object format';
+									}
+								}
+
+								// Number validation
+								if (prop.type === 'number' || prop.type === 'integer') {
+									const num = Number(value);
+									if (isNaN(num)) {
+										errors[key] = `Must be a valid ${prop.type}`;
+									} else {
+										if (prop.type === 'integer' && !Number.isInteger(num)) {
+											errors[key] = 'Must be an integer';
+										}
+										if (prop.minimum !== undefined && num < prop.minimum) {
+											errors[key] = `Must be at least ${prop.minimum}`;
+										}
+										if (prop.maximum !== undefined && num > prop.maximum) {
+											errors[key] = `Must be at most ${prop.maximum}`;
+										}
+									}
+								}
+
+								// String pattern validation
+								if (prop.type === 'string' && prop.pattern) {
+									try {
+										const regex = new RegExp(prop.pattern);
+										if (!regex.test(value)) {
+											errors[key] = `Must match pattern: ${prop.pattern}`;
+										}
+									} catch {
+										// Invalid regex pattern in schema
+									}
+								}
+
+								// Enum validation for non-arrays
+								if (prop.enum && !Array.isArray(prop.enum)) {
+									if (!prop.enum.includes(value)) {
+										errors[key] = `Must be one of: ${prop.enum.join(', ')}`;
+									}
 								}
 							}
 						});
@@ -346,94 +411,155 @@ const App = () => {
 									<Text weight="600" style={{ marginBottom: '12px', display: 'block' }}>Input Parameters:</Text>
 									{Object.keys(item.input_schema.properties).map(key => {
 										const prop = item.input_schema.properties[key];
-										const isRequired = !prop.hasOwnProperty('default');
+										const isRequired = item.input_schema.required?.includes(key) || !prop.hasOwnProperty('default');
 
-										// Special handling for fields with enum items
-										const isFieldsParam = key === 'fields' && prop.type === 'array' && prop.items?.enum;
+										// Determine the input type based on schema
+										const getInputType = () => {
+											if (prop.enum && prop.type !== 'array') return 'select';
+											if (prop.type === 'boolean') return 'checkbox';
+											if (prop.type === 'number' || prop.type === 'integer') return 'number';
+											if (prop.type === 'array' && prop.items?.enum) return 'multi-select';
+											if (prop.type === 'array') return 'json-array';
+											if (prop.type === 'object') return 'json-object';
+											return 'text';
+										};
+
+										const inputType = getInputType();
+
+										// Format type information for display
+										const getTypeInfo = () => {
+											let info = prop.type || 'string';
+											if (prop.type === 'array' && prop.items) {
+												if (prop.items.type) {
+													info += ` of ${prop.items.type}s`;
+												}
+												if (prop.items.enum) {
+													info += ` (${prop.items.enum.length} choices)`;
+												}
+											}
+											if (prop.minimum !== undefined || prop.maximum !== undefined) {
+												info += ` (${prop.minimum ?? '*'} - ${prop.maximum ?? '*'})`;
+											}
+											if (prop.pattern) {
+												info += ` (pattern: ${prop.pattern})`;
+											}
+											return info;
+										};
 
 										return (
-											<div key={key} style={{ marginBottom: '16px' }}>
-												<label style={{ display: 'block', marginBottom: '4px' }}>
-													<Text weight="500" style={{ fontSize: '14px' }}>
-														{key}{!isRequired && <span style={{ color: '#666' }}> (optional)</span>}
-													</Text>
-												</label>
-												{prop.description && (
-													<Text size="small" style={{ display: 'block', marginBottom: '8px', color: '#666' }}>
-														{prop.description}
-													</Text>
-												)}
-
-												{/* Show available values for enum arrays like fields */}
-												{isFieldsParam && (
-													<div style={{
-														background: '#fff',
-														padding: '12px',
-														borderRadius: '4px',
-														marginBottom: '8px',
-														border: '1px solid #ddd'
-													}}>
-														<Text size="small" weight="500" style={{ display: 'block', marginBottom: '8px' }}>
-															Available values (select one or more):
+											<div key={key} style={{
+												marginBottom: '20px',
+												padding: '12px',
+												background: '#fff',
+												borderRadius: '4px',
+												border: '1px solid #ddd'
+											}}>
+												<div style={{ marginBottom: '8px' }}>
+													<label style={{ display: 'block', marginBottom: '4px' }}>
+														<Text weight="600" style={{ fontSize: '14px', color: '#1e1e1e' }}>
+															{key}
+															{isRequired && <span style={{ color: '#d94f4f' }}> *</span>}
+															{!isRequired && <span style={{ color: '#666' }}> (optional)</span>}
 														</Text>
-														<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-															{prop.items.enum.map(val => (
-																<Button
-																	key={val}
-																	variant="secondary"
-																	size="small"
-																	onClick={() => {
-																		let currentArray = [];
-																		try {
-																			if (inputValues[key]) {
-																				currentArray = JSON.parse(inputValues[key]);
-																			}
-																		} catch {}
+													</label>
+													<Text size="small" style={{ display: 'block', color: '#666' }}>
+														Type: <code style={{
+															background: '#f0f0f0',
+															padding: '2px 4px',
+															borderRadius: '2px',
+															fontSize: '11px'
+														}}>{getTypeInfo()}</code>
+														{prop.default !== undefined && (
+															<span> • Default: <code style={{
+																background: '#f0f0f0',
+																padding: '2px 4px',
+																borderRadius: '2px',
+																fontSize: '11px'
+															}}>{JSON.stringify(prop.default)}</code></span>
+														)}
+													</Text>
+													{prop.description && (
+														<Text size="small" style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+															{prop.description}
+														</Text>
+													)}
+												</div>
 
-																		if (!Array.isArray(currentArray)) currentArray = [];
+												{/* Multi-select for array with enum items */}
+												{inputType === 'multi-select' && (
+													<div>
+														<div style={{
+															background: '#f8f8f8',
+															padding: '8px',
+															borderRadius: '4px',
+															marginBottom: '8px',
+															maxHeight: '150px',
+															overflowY: 'auto'
+														}}>
+															<Text size="small" weight="500" style={{ display: 'block', marginBottom: '6px' }}>
+																Available options (click to select/deselect):
+															</Text>
+															<div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+																{prop.items.enum.map(val => {
+																	let isSelected = false;
+																	try {
+																		const arr = inputValues[key] ? JSON.parse(inputValues[key]) : [];
+																		isSelected = Array.isArray(arr) && arr.includes(val);
+																	} catch {}
 
-																		if (currentArray.includes(val)) {
-																			currentArray = currentArray.filter(v => v !== val);
-																		} else {
-																			currentArray.push(val);
-																		}
+																	return (
+																		<Button
+																			key={val}
+																			variant={isSelected ? 'primary' : 'secondary'}
+																			size="small"
+																			onClick={() => {
+																				let currentArray = [];
+																				try {
+																					if (inputValues[key]) {
+																						currentArray = JSON.parse(inputValues[key]);
+																					}
+																				} catch {}
 
-																		const newValue = currentArray.length > 0
-																			? JSON.stringify(currentArray, null, 2)
-																			: '';
-																		setInputValues({...inputValues, [key]: newValue});
-																		setInputErrors({...inputErrors, [key]: ''});
-																	}}
-																	style={{
-																		opacity: (() => {
-																			try {
-																				const arr = inputValues[key] ? JSON.parse(inputValues[key]) : [];
-																				return Array.isArray(arr) && arr.includes(val) ? 1 : 0.6;
-																			} catch {
-																				return 0.6;
-																			}
-																		})(),
-																		fontWeight: (() => {
-																			try {
-																				const arr = inputValues[key] ? JSON.parse(inputValues[key]) : [];
-																				return Array.isArray(arr) && arr.includes(val) ? 'bold' : 'normal';
-																			} catch {
-																				return 'normal';
-																			}
-																		})()
-																	}}
-																>
-																	{val}
-																</Button>
-															))}
+																				if (!Array.isArray(currentArray)) currentArray = [];
+
+																				if (currentArray.includes(val)) {
+																					currentArray = currentArray.filter(v => v !== val);
+																				} else {
+																					currentArray.push(val);
+																				}
+
+																				const newValue = currentArray.length > 0
+																					? JSON.stringify(currentArray, null, 2)
+																					: '';
+																				setInputValues({...inputValues, [key]: newValue});
+																				setInputErrors({...inputErrors, [key]: ''});
+																			}}
+																		>
+																			{val}
+																		</Button>
+																	);
+																})}
+															</div>
 														</div>
-														<Text size="small" style={{ display: 'block', marginTop: '8px', color: '#666' }}>
-															Click fields to add/remove them from selection
-														</Text>
+														<TextareaControl
+															value={inputValues[key] || ''}
+															onChange={(value) => {
+																setInputValues({...inputValues, [key]: value});
+																setInputErrors({...inputErrors, [key]: ''});
+															}}
+															placeholder="Selected values will appear here as JSON array"
+															rows={3}
+															style={{
+																fontFamily: 'monospace',
+																fontSize: '12px',
+																backgroundColor: '#fff'
+															}}
+														/>
 													</div>
 												)}
 
-												{prop.enum && prop.type !== 'array' ? (
+												{/* Regular select dropdown */}
+												{inputType === 'select' && (
 													<select
 														value={inputValues[key] || ''}
 														onChange={(e) => {
@@ -448,12 +574,55 @@ const App = () => {
 															fontSize: '14px'
 														}}
 													>
-														<option value="">Select {key}...</option>
+														<option value="">-- Select {key} --</option>
 														{prop.enum.map(val => (
 															<option key={val} value={val}>{val}</option>
 														))}
 													</select>
-												) : (
+												)}
+
+												{/* Boolean checkbox */}
+												{inputType === 'checkbox' && (
+													<div>
+														<label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+															<input
+																type="checkbox"
+																checked={inputValues[key] === 'true' || inputValues[key] === true}
+																onChange={(e) => {
+																	setInputValues({...inputValues, [key]: e.target.checked.toString()});
+																	setInputErrors({...inputErrors, [key]: ''});
+																}}
+																style={{ marginRight: '8px' }}
+															/>
+															<Text>Enable {key}</Text>
+														</label>
+													</div>
+												)}
+
+												{/* Number input */}
+												{inputType === 'number' && (
+													<input
+														type="number"
+														value={inputValues[key] || ''}
+														onChange={(e) => {
+															setInputValues({...inputValues, [key]: e.target.value});
+															setInputErrors({...inputErrors, [key]: ''});
+														}}
+														placeholder={`Enter ${prop.type}`}
+														min={prop.minimum}
+														max={prop.maximum}
+														style={{
+															width: '100%',
+															padding: '8px',
+															border: inputErrors[key] ? '1px solid #d94f4f' : '1px solid #8c8f94',
+															borderRadius: '4px',
+															fontSize: '14px'
+														}}
+													/>
+												)}
+
+												{/* JSON array/object inputs */}
+												{(inputType === 'json-array' || inputType === 'json-object') && (
 													<TextareaControl
 														value={inputValues[key] || ''}
 														onChange={(value) => {
@@ -461,25 +630,40 @@ const App = () => {
 															setInputErrors({...inputErrors, [key]: ''});
 														}}
 														placeholder={
-															isFieldsParam
-																? 'Selected fields will appear here as JSON array'
-																: prop.type === 'array'
-																	? `Example: ["value1", "value2"]`
-																	: `Enter ${prop.type || 'text'} value`
+															inputType === 'json-array'
+																? `Example: ["item1", "item2", "item3"]`
+																: `Example: {"key": "value", "key2": "value2"}`
 														}
-														rows={prop.type === 'array' ? 4 : 1}
+														rows={4}
 														style={{
 															fontFamily: 'monospace',
-															fontSize: '13px',
+															fontSize: '12px',
 															backgroundColor: '#fff'
 														}}
-														help={
-															prop.type === 'array' && !isFieldsParam
-																? 'Enter a valid JSON array format'
-																: ''
-														}
+														help={`Enter valid JSON ${prop.type} format`}
 													/>
 												)}
+
+												{/* Default text input */}
+												{inputType === 'text' && (
+													<input
+														type="text"
+														value={inputValues[key] || ''}
+														onChange={(e) => {
+															setInputValues({...inputValues, [key]: e.target.value});
+															setInputErrors({...inputErrors, [key]: ''});
+														}}
+														placeholder={`Enter ${prop.type || 'text'} value`}
+														style={{
+															width: '100%',
+															padding: '8px',
+															border: inputErrors[key] ? '1px solid #d94f4f' : '1px solid #8c8f94',
+															borderRadius: '4px',
+															fontSize: '14px'
+														}}
+													/>
+												)}
+
 												{inputErrors[key] && (
 													<Notice status="error" isDismissible={false} style={{ marginTop: '8px' }}>
 														{inputErrors[key]}
@@ -489,7 +673,7 @@ const App = () => {
 										);
 									})}
 									<Text size="small" style={{ display: 'block', marginTop: '8px', color: '#666', fontStyle: 'italic' }}>
-										Leave fields empty to use default values
+										Tip: Leave optional fields empty to use their default values
 									</Text>
 								</div>
 							)}
